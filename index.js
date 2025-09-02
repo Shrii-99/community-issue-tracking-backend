@@ -10,6 +10,7 @@ import hpp from "hpp";
 import morgan from "morgan";
 import xss from "xss-clean";
 import connectDB from "./src/database/db.js";
+import { UserModel } from "./src/models/user.model.js";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -51,8 +52,20 @@ app.use(
 
 
 //Api Routes
-app.get('/api/' , (req , res) => {
-  res.send("Hii from server")
+app.post('/api/v1/signup' ,async (req , res) => {
+  const data = req.body;
+
+  const newuser = await UserModel.create({
+    firstname : data.firstname,
+    lastname : data.lastname,
+    password : data.password,
+    email : data.email
+  })
+
+  await newuser.save();
+
+  return res.json(newuser);
+
 })
 
 
