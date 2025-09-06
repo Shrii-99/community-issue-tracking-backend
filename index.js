@@ -52,21 +52,7 @@ app.use(
 
 
 //Api Routes
-app.post('/api/v1/signup' ,async (req , res) => {
-  const data = req.body;
 
-  const newuser = await UserModel.create({
-    firstname : data.firstname,
-    lastname : data.lastname,
-    password : data.password,
-    email : data.email
-  })
-
-  await newuser.save();
-
-  return res.json(newuser);
-
-})
 
 
 
