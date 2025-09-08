@@ -1,81 +1,95 @@
-//Custom error class
-export class AppError extends Error {
-  constructor(message, statusCode) {
-    super(message);
-    this.statusCode = statusCode;
-    this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
-    this.isOperational = true;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+import { body, param, query, validationResult } from "express-validator";
+import { AppError } from "./error.middleware.js";
 
-//Error handler for async functions
-export const catchAsync = (fn) => {
-  return (res, res, next) => {
-    fn(req, res, next).next();
+export const validate = (validations) => {
+  return async (req, res, next) => {
+    // Run all validations
+    await Promise.all(validations.map((validation) => validation.run(req)));
+
+    const errors = validationResult(req);
+    if (errors.isEmpty()) {
+      return next();
+    }
+
+    const extractedErrors = errors.array().map((err) => ({
+      field: err.path,
+      message: err.msg,
+    }));
+
+    throw new AppError("Validation failed", 400, extractedErrors);
   };
 };
 
-// Global error handling middleware
-export const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+// Common validation chains
+export const commonValidations = {
+  pagination: [
+    query("page")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Page must be a positive integer"),
+    query("limit")
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage("Limit must be between 1 and 100"),
+  ],
 
-  if (process.env.NODE_ENV === "development") {
-    // Development error response
-    res.status(err.statusCode).json({
-      status: err.status,
-      error: err,
-      message: err.message,
-      stack: err.stack,
-    });
-  } else {
-    // Production error response
-    if (err.isOperational) {
-      // Operational, trusted error: send message to client
-      res.status(err.statusCode).json({
-        status: err.status,
-        message: err.message,
-      });
-    } else {
-      // Programming or other unknown error: don't leak error details
-      console.error("ERROR 💥", err);
-      res.status(500).json({
-        status: "error",
-        message: "Something went wrong!",
-      });
-    }
-  }
+  objectId: (field) =>
+    param(field).isMongoId().withMessage(`Invalid ${field} ID format`),
+
+  email: body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+
+  password: body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
+    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/)
+    .withMessage(
+      "Password must contain at least one number, one uppercase letter, one lowercase letter, and one special character"
+    ),
+
+  name: body("name")
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Name must be between 2 and 50 characters")
+    .matches(/^[a-zA-Z\s]*$/)
+    .withMessage("Name can only contain letters and spaces"),
+
+  price: body("price")
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a positive number"),
+
+  url: body("url").isURL().withMessage("Please provide a valid URL"),
 };
 
-//Handle specific mongodb errors
-export const handleMongoError = (err) => {
-  if (err.name === "CastError") {
-    return new AppError(`Invalid ${err.path} : ${err.value}`);
-  }
+// User validation chains
+export const validateSignup = validate([
+  commonValidations.name,
+  commonValidations.email,
+  commonValidations.password,
+]);
 
-  if (err.code === 11000) {
-    const value = err.errmsg.match(/([""])(\\?.)*?\1/)[0];
+export const validateSignin = validate([
+  commonValidations.email,
+  body("password").notEmpty().withMessage("Password is required"),
+]);
 
-    return new AppError(
-      `Duplicate field value: ${value}. Please use another value!`,
-      400
-    );
-  }
-
-  if (err.name === "ValidationError") {
-    const errors = Object.values(err.errors).map((el) => el.message);
-    return new AppError(`Invalid input data. ${errors.join(". ")}`, 400);
-  }
-
-  return err;
-};
-
-//Handle Jwt errors
-
-export const handleJWTExpiredError = () => {
-  new AppError("Your token has expired! please log in again", 401);
-};
-export const handleJWTError = () => {
-  new AppError("Invalid token. Pleas log in again!", 401);
-};
+export const validatePasswordChange = validate([
+  body("currentPassword")
+    .notEmpty()
+    .withMessage("Current password is required"),
+  body("newPassword")
+    .notEmpty()
+    .withMessage("New password is required")
+    .custom((value, { req }) => {
+      if (value === req.body.currentPassword) {
+        throw new Error("New password must be different from current password");
+      }
+      return true;
+    })
+    .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])/)
+    .withMessage(
+      "Password must contain at least one number, one uppercase letter, one lowercase letter, and one special character"
+    ),
+]);
