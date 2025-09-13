@@ -43,6 +43,12 @@ const userSchema = new mongoose.Schema(
       },
       default: "user",
     },
+    createdIssues : [
+      {
+        type : mongoose.Schema.ObjectId,
+        ref : "Issue"
+      }
+    ],
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
@@ -82,5 +88,10 @@ userSchema.methods.getResetPasswordToken = function () {
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; //10 min
   return resetToken;
 };
+
+
+userSchema.virtual("totalCreatedIssues").get(function() {
+  return this.createdIssues?.length;
+});
 
 export const UserModel = mongoose.model("User", userSchema);
