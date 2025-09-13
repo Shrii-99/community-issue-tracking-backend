@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
 import { AppError, catchAsync } from "../middlewares/error.middlware.js";
 import { UserModel } from "../models/user.model.js";
+import { generateToken } from "../util/generateToken.js";
 
 export const registerUser = catchAsync(async (req, res) => {
   const { firstname, lastname, password, email, role } = req.body;
-  const user = await UserModel.findOne(email);
+  const user = await UserModel.findOne({email});
   if (user) {
     throw new AppError(
       "User exist with the email!, Please enter the correct email",
@@ -30,28 +31,14 @@ export const registerUser = catchAsync(async (req, res) => {
 
 export const login = catchAsync(async (req, res) => {
   const { password, email } = req.body;
-  const user = await UserModel.findOne(email);
-  if (!user) {
+  const user = await UserModel.findOne({email}).select("+password");
+  if (!user || !(await user.comparePassword(password))) {
     throw new AppError(
       "User does not exist with the email!, Please register the correct user",
       400
     );
   }
-  const isCorrectPassword = await user.comparePassword(password);
+ 
 
-  if (!isCorrectPassword) {
-    throw new AppError("Password is wrong! Please try again", 401);
-  }
-
-  const token = jwt.sign(
-    {
-      userId: user._id,
-    },
-    "prathmesh_patil",
-    { expiresIn: "1d" }
-  );
-
-  return res
-    .status(200)
-    .json({ token, message: "User registered successfully! please log in" });
+  generateToken(res , user._id , `Welcome back ${user.firstname}`)
 });

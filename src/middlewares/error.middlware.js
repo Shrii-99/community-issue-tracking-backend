@@ -11,8 +11,8 @@ export class AppError extends Error {
 
 //Error handler for async functions
 export const catchAsync = (fn) => {
-  return (res, res, next) => {
-    fn(req, res, next).next();
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);
   };
 };
 

@@ -10,7 +10,7 @@ import hpp from "hpp";
 import morgan from "morgan";
 import xss from "xss-clean";
 import connectDB from "./src/database/db.js";
-import { UserModel } from "./src/models/user.model.js";
+import userRouter from "./src/routes/user.routes.js";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -52,7 +52,7 @@ app.use(
 
 
 //Api Routes
-
+app.use("/api/v1" , userRouter)
 
 
 
