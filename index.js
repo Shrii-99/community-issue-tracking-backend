@@ -52,7 +52,7 @@ app.use(
 
 
 //Api Routes
-app.use("/api/v1" , userRouter)
+app.use("/api/v1/user" , userRouter)
 
 
 

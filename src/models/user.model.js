@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import "./issues.model.js"
 
 const userSchema = new mongoose.Schema(
   {
@@ -43,16 +44,16 @@ const userSchema = new mongoose.Schema(
       },
       default: "user",
     },
-    createdIssues : [
+    createdIssues: [
       {
-        type : mongoose.Schema.ObjectId,
-        ref : "Issue"
-      }
+        type: mongoose.Schema.ObjectId,
+        ref: "Issue",
+      },
     ],
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
 //hashing the password hook
@@ -89,8 +90,7 @@ userSchema.methods.getResetPasswordToken = function () {
   return resetToken;
 };
 
-
-userSchema.virtual("totalCreatedIssues").get(function() {
+userSchema.virtual("totalCreatedIssues").get(function () {
   return this.createdIssues?.length;
 });
 

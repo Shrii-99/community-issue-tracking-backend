@@ -1,10 +1,10 @@
 import jwt from "jsonwebtoken";
-import { AppError, catchAsync } from "./validation.middleware.js";
 import { UserModel } from "../models/user.model.js";
+import { AppError, catchAsync } from "./error.middlware.js";
 
 export const isAuthenticated = catchAsync(async (req, res, next) => {
   //check if token exist in cookies
-  const token = req.cookie.token;
+  const token = req.cookies.token;
 
   if (!token) {
     throw new AppError(
@@ -23,6 +23,7 @@ export const isAuthenticated = catchAsync(async (req, res, next) => {
     }
 
     req.user = user;
+    next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {
       throw new AppError("Your token has expired. Please log in again", 401);
