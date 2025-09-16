@@ -11,6 +11,7 @@ import morgan from "morgan";
 import xss from "xss-clean";
 import connectDB from "./src/database/db.js";
 import userRouter from "./src/routes/user.routes.js";
+import issueRouter from "./src/routes/issue.routes.js";
 
 const port = process.env.PORT || 3000;
 const app = express();
@@ -52,7 +53,8 @@ app.use(
 
 
 //Api Routes
-app.use("/api/v1/user" , userRouter)
+app.use("/api/v1/user" , userRouter);
+app.use("/api/v1/issue" , issueRouter);
 
 
 
