@@ -12,7 +12,7 @@ export const ReportIssue = catchAsync(async (req, res) => {
   }
 
   if(!location || !location.type || !Array.isArray(location.coordinates)){
-    throw new AppError("Location with latitude and longitude is required", 400);
+    throw new AppError("Location with latitude and longitude is required",  400);
   }
 
   const createIssue = await IssuesModel.create({
