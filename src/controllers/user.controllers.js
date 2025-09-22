@@ -39,7 +39,7 @@ export const login = catchAsync(async (req, res) => {
   }
 
 
-  generateToken(res, user._id, `Welcome back ${user.firstname}`)
+  generateToken(res, user, `Welcome back ${user.firstname}`)
 });
 
 

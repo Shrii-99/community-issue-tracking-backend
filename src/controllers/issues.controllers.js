@@ -3,6 +3,7 @@ import { IssuesModel } from "../models/issues.model.js";
 
 export const ReportIssue = catchAsync(async (req, res) => {
   const { title, description, address, location, imageUrl } = req.body;
+  console.log(req.body)
   if ([title, description, address, imageUrl].some((field) => !field.trim())) {
     throw new AppError("All fields are required", 400);
   }
@@ -21,7 +22,7 @@ export const ReportIssue = catchAsync(async (req, res) => {
   });
 
   if (!createIssue) {
-    throw new AppError("Something went wrong, Please try again", 500);
+    throw new AppError("Something went wrong, Please try again from backend", 500);
   }
 
   return res
@@ -36,25 +37,25 @@ export const changeIssueStatus = catchAsync(async (req, res) => {
   if (role !== "admin") {
     throw new AppError("You dont have permission to perform this action", 403);
   }
-  const issueId = req.params.id || req.query.id;
+  const issueId = req.params.id;
   if (!issueId) {
     throw new AppError("Issue ID is required", 400);
-  }
-  const { status } = req.body; // expect new status in body
+  } 
+  const  {status}  = req.body; // expect new status in body
   const isssue = await IssuesModel.findByIdAndUpdate(
     issueId,
     { status: status },
     { new: true, runValidators: true }
   );
 
-  if (!updatedIssue) {
+  if (!isssue) {
     throw new AppError("Issue not found with this ID", 404);
   }
 
   res.status(200).json({
     status: "success",
     message: "Issue Status updated successfully",
-    data: updatedIssue,
+    data: isssue,
   });
 });
 
@@ -71,15 +72,14 @@ export const getAllIssues = catchAsync(async (req, res) => {
   res.status(200).json({
     status: "success",
     results: issues.length,
-    data: issues,
+    issues
   });
 });
 
 export const deleteIssue = catchAsync(async (req, res) => {
   const role = req.user.role;
   const userId = req.id; // current logged-in user
-  const issueId = req.params.id || req.query.id;
-
+  const issueId = req.params.id;
   if (!issueId) {
     throw new AppError("Issue ID is required", 400);
   }
